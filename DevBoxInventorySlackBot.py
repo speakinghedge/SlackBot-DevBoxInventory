@@ -120,8 +120,9 @@ class DevBoxInventorySlackBot:
 
         cmd_args.pop(0)
 
-        while len(cmd_args) > 0:
+        while cmd_args:
 
+            cmd_args[0] = cmd_args[0].strip()
             cmd_args = cmd_args[0].split(' ', 1)
             next_arg = cmd_args[0]
 
