@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import time
 import syslog
@@ -80,16 +81,17 @@ class DevBoxInventorySlackBot:
     def _cmd_help(self, channel_id, user_name, cmd_args):
 
         msg = u'```\n' \
-              u'show                                               list dev boxes\n' \
-              u'add <name> ip:<ip-address> comment:<comment>       add a box having name <name> with optional ip and comment\n' \
-              u'                                                   (comment option is greedy and eats everything after comment:)\n' \
-              u'del <name>                                         delete a box having name <name>\n' \
-              u'update <name> ip:<ip-address> comment:<comment>    update a box having name <name> with optional ip and comment\n' \
-              u'                                                   (comment option is greedy and eats everything after comment:)\n' \
-              u'take <name>                                        take ownership of box <name>\n' \
-              u'occupy <name>                                      take ownership of box <name> that is currently in use\n' \
-              u'put <name>                                         drop ownership of box <name>\n' \
-              u'_restart                                           restart bot (re-read user list)\n' \
+              u'show [<shell-style-wildcard filter>]                  list dev boxes - apply optional filter\n' \
+              u'add <name> [ip:<ip-address>] [comment:<comment>]      add a box having name <name> with optional ip and comment\n' \
+              u'                                                      (comment option is greedy and eats everything after comment:)\n' \
+              u'del <name>                                            delete a box having name <name>\n' \
+              u'update <name> [ip:<ip-address>] [comment:<comment>]   update a box having name <name> with optional ip and comment\n' \
+              u'                                                      (comment option is greedy and eats everything after comment:)\n' \
+              u'take <name> [comment:<comment>]                       take ownership of box <name>, set optional comment\n' \
+              u'occupy <name> [comment:<comment>]                     take ownership of box <name> that is currently in use\n' \
+              u'                                                      set optional comment\n' \
+              u'put <name>                                            drop ownership of box <name>\n' \
+              u'_restart                                              restart bot (re-read user list)\n' \
               u'```'
 
         return True, msg
@@ -97,14 +99,20 @@ class DevBoxInventorySlackBot:
     def _cmd_show(self, channel_id, user_name, cmd_args):
 
         msg = u''
+
         for name, ip, user, comment in self.inventory.box_datas():
-            msg += u'{0:20}{1:15}{2:20}{3}\n'.format(name,
-                                                    user if user else 'free',
-                                                    ip if ip else '',
-                                                    comment if comment else '')
+            if cmd_args and not fnmatch.fnmatch(name, cmd_args):
+                continue
+            msg += u'{0:15}{1:15}{2:20}{3}\n'.format(name,
+                                                     user if user else 'free',
+                                                     ip if ip else '',
+                                                     comment if comment else '')
 
         if not msg:
-            return True, u'No boxes in inventory ;-('
+            if cmd_args:
+                return True, u'No matching boxes in inventory ;-('
+            else:
+                return True, u'No boxes in inventory ;-('
         else:
             return True, u'```\n' + msg + '```'
 
@@ -175,7 +183,7 @@ class DevBoxInventorySlackBot:
 
     def _cmd_set_box_ownership(self, channel_id, user_name, cmd_args, force):
 
-        ret, ret_msg, box_name_cmd, ip, comment = self._parse_box_spec(cmd_args)
+        ret, ret_msg, box_name_cmd, ip, comment_cmd = self._parse_box_spec(cmd_args)
         if ret is False:
             return False, ret_msg
 
@@ -196,7 +204,7 @@ class DevBoxInventorySlackBot:
             if box_user and box_user != user_name:
                 old_user = box_user
 
-        ret = self.inventory.box_data_set(box_name, ip, user_name, comment)
+        ret = self.inventory.box_data_set(box_name, ip, user_name, comment_cmd)
         if ret:
             if old_user:
                 return True, u'Box *{0}* *STOLEN* from *{1}* now in use by *{2}*.'.format(box_name, old_user, user_name)

@@ -40,7 +40,7 @@ python ./DevBoxInventorySlackBot.py
 
 ..is currently really simple and only fulfills our basic requirements: manage the ownership of dev boxes. For being able to do this it offers some basic commands:
 
-## show
+## show [\<shell-style-wildcard filter\>]
 
 *show* a list of all dev boxes + visible attributes, e.g.:
 
@@ -51,7 +51,15 @@ randy          hecke          10.0.0.1            do not power off - long time t
 lorde          free
 ```
 
-## add <box-name> <ip:address> <comment:text>
+The filter supports the pattern * and ?.
+
+ ```
+hecke> @inventory show ran*
+
+randy          hecke          10.0.0.1            do not power off - long time test over the weekend
+```
+
+## add \<box-name\> [ip:\<address\>] [comment:\<text\>]
 
 *add* a new box to the inventory. You may add an IP address or a comment by using the tags *ip:* and *comment:*.
 
@@ -72,7 +80,7 @@ lorde          free
 timmy          free           10.0.0.17            don't power off - file-server!!!
 ```
 
-## update <box-name> <ip:address> <comment:text>
+## update \<box-name\> [ip:\<address\>] [comment:\<text\>]
 
 *update* ip or comment for a given box.
 
@@ -92,7 +100,7 @@ hecke> @inventory show
 randy          hecke          10.0.0.254
 ```
 
-## del <box-name>
+## del \<box-name\>
 
 *del*ete box given by name.
 
@@ -111,7 +119,7 @@ hecke> @inventory show
 lorde          free
 ```
 
-## take <box-name>
+## take \<box-name\> [comment:\<comment\>}
 
 *take* ownership of box given by name. 
 
@@ -131,7 +139,9 @@ lorde          hecke
 timmy          free           10.0.0.17            don't power off - file-server!!!
 ```
 
-## occupy <box-name>
+If given, the comment is set.
+
+## occupy <box-name> [comment:\<comment\>}
 
 *occupy* a box that is currently in use by another user. This is the unfriendly way. Asking the current owner is the
 preferred way...
@@ -156,7 +166,9 @@ lorde          tester1
 timmy          free           10.0.0.17            don't power off - file-server!!!
 ```
 
-## put <box-name>
+If given, the comment is set.
+
+## put \<box-name\>
 
 *put* the ownership of the box given by name back to the pool.
 
