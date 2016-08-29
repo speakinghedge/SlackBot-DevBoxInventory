@@ -98,7 +98,7 @@ class DevBoxInventorySlackBot:
 
         msg = u''
         for name, ip, user, comment in self.inventory.box_datas():
-            msg += u'{0:15}{1:15}{2:20}{3}\n'.format(name,
+            msg += u'{0:20}{1:15}{2:20}{3}\n'.format(name,
                                                     user if user else 'free',
                                                     ip if ip else '',
                                                     comment if comment else '')
