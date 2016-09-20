@@ -3,17 +3,19 @@ classes to manage development boxes
 """
 import pickle
 from sys import stderr
+from time import time
 
 
 class DevBox(object):
     """
     represents a development box
     """
-    def __init__(self, name, ip=None, user=None, comment=None):
+    def __init__(self, name, ip=None, user=None, comment=None, taken_timestamp=None):
         self._name = name
         self._ip = ip
         self._user = user
         self._comment = comment
+        self._taken_timestamp = taken_timestamp
 
     @property
     def name(self):
@@ -43,6 +45,14 @@ class DevBox(object):
     def comment(self, value):
         self._comment = value
 
+    @property
+    def taken_timestamp(self):
+        return self._taken_timestamp
+
+    @taken_timestamp.setter
+    def taken_timestamp(self, value):
+        self._taken_timestamp = value
+
 
 class DevBoxInventory(object):
     """
@@ -55,14 +65,14 @@ class DevBoxInventory(object):
 
         try:
             self._load()
-        except IOError as err:
+        except IOError as error:
             try:
                 self._save()
-            except Exception as err:
-                stderr.write(str(err))
+            except Exception as error:
+                stderr.write(str(error))
                 exit(1)
-        except Exception as err:
-            stderr.write(str(err))
+        except Exception as error:
+            stderr.write(str(error))
             exit(1)
 
     def _save(self):
@@ -73,8 +83,8 @@ class DevBoxInventory(object):
 
                 return len(self._inventory)
 
-        except Exception as err:
-            raise Exception('Failed to create inventory file in `{0}` cause: {1}'.format(self._inventory_file, err))
+        except Exception as error:
+            raise Exception('Failed to create inventory file in `{0}` cause: {1}'.format(self._inventory_file, error))
 
     def _load(self):
 
@@ -83,18 +93,18 @@ class DevBoxInventory(object):
                 self._inventory = pickle.load(inv_file)
 
                 return len(self._inventory)
-        except IOError as err:
-            if err.errno == 2:
+        except IOError as error:
+            if error.errno == 2:
                 raise IOError('File not found')
             else:
-                raise Exception('Failed to load inventory file from `{0}` cause: {1}'.format(self._inventory_file, err))
-        except EOFError as err:
+                raise Exception('Failed to load inventory file from `{0}` cause: {1}'.format(self._inventory_file, error))
+        except EOFError as error:
             raise Exception(
                 'Failed to load inventory file from `{0}` cause file is empty or has invalid format.'.format(
                     self._inventory_file))
 
-        except Exception as err:
-            raise Exception('Failed to load inventory file from `{0}` cause: {1}'.format(self._inventory_file, err))
+        except Exception as error:
+            raise Exception('Failed to load inventory file from `{0}` cause: {1}'.format(self._inventory_file, error))
 
     def box_add(self, name, ip=None, user=None, comment=None):
 
@@ -135,6 +145,8 @@ class DevBoxInventory(object):
                 if ip is not None:
                     box.ip = ip
                 if user is not None:
+                    if box.user != user:
+                        box.taken_timestamp = time()
                     box.user = user
                 if comment is not None:
                     box.comment = comment
@@ -151,4 +163,4 @@ class DevBoxInventory(object):
     def box_datas(self):
 
         for box in self._inventory:
-            yield box.name, box.ip, box.user, box.comment
+            yield box.name, box.ip, box.user, box.comment, box.taken_timestamp
