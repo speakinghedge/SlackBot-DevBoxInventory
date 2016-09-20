@@ -5,13 +5,9 @@ someone needs to ask _'who is using box foo'_ or _'can I have box bar'_ or _'can
 
 Integrating the management of the dev box ownership in slack is a big plus as it may safe time, prevents FUD, is transparent and you don't need to fire up an additional tool...
 
-# required environment
+# environment
 
-This bot uses the python SlackClient (tested with version: 1.0.1). You may install it by running
-
-```
-> sudo pip install SlackClient
-```
+Dependencies: see requirements.txt
 
 To be able to run the bot the following environment variables must be set:
 
@@ -38,7 +34,27 @@ python ./DevBoxInventorySlackBot.py
 
 # the bot
 
-..is currently really simple and only fulfills our basic requirements: manage the ownership of dev boxes. For being able to do this it offers some basic commands:
+..is currently really simple and only fulfills our basic requirements: manage the ownership of dev boxes. Most if the commands allow optional meta-information arguments to be added.
+A argument is build using its name as prefix followed by a colon. The value of the argument is build
+- consuming the next word up to the next whitespace character or
+- consuming the next word group enclosed by double quotes, e.g.
+
+```
+@inventory update randy comment:the-blues
+```
+sets the comment of randy to _the-blues_ while
+```
+@inventory update randy comment:"I still got the blues" ip:1.2.3.4
+```
+sets the comment to _I still got the blues_ and the IP to _1.2.3.4_.
+
+If the character after the colon is a whitespace the value of the argument is set to an empty string, e.g.
+```
+@inventory update randy commen:
+```
+will delete the comment.
+
+Currently the arguments _ip_ and _comment_ are supported.
 
 ## show [\<shell-style-wildcard filter\>]
 
@@ -47,49 +63,49 @@ python ./DevBoxInventorySlackBot.py
 ```
 hecke> @inventory show
 
-randy          hecke          10.0.0.1            do not power off - long time test over the weekend
-lorde          free
+box name                 owner          time taken               address             comment
+harry                    hecke          20.09.2016 21:05:12      192.168.1.110       what the hell is that
+lorde                    free           -                        10.10.0.1           -
 ```
 
 The filter supports the pattern * and ?.
 
  ```
-hecke> @inventory show ran*
+hecke> @inventory show har*
 
-randy          hecke          10.0.0.1            do not power off - long time test over the weekend
+box name                 owner          time taken               address             comment
+harry                    hecke          20.09.2016 21:05:12      192.168.1.110       what the hell is that
 ```
 
-## add \<box-name\> [ip:\<address\>] [comment:\<text\>]
+## add \<box-name\> [\<meta arg\>]
 
-*add* a new box to the inventory. You may add an IP address or a comment by using the tags *ip:* and *comment:*.
-
-Note: the comment option is greedy - it eats all following text
+*add* a new box to the inventory. You may add an IP address or a comment by using the args *ip:* and *comment:*.
 
 ``` 
 hecke> @inventory add lorde
 
 inventoryBOT> Box *lorde* added to inventory.
 
-hecke > @inventory add timmy ip:10.0.0.17 comment: don't power off - file-server!!!
+hecke > @inventory add timmy ip:10.0.0.17 comment:"don't power off - file-server!!!"
 
 inventoryBOT> Box *timmy* added to inventory.
 
 hecke> @inventory show
 
-lorde          free                            
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    free           -                        -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 ```
 
-## update \<box-name\> [ip:\<address\>] [comment:\<text\>]
+## update \<box-name\> [\<meta arg\>]
 
 *update* ip or comment for a given box.
-
-If ip or comment is given but empty the associated attribute is cleared.
 
 ```
 hecke> @inventory show
 
-randy          hecke          10.0.0.1            do not power off - long time test over the weekend
+box name                 owner          time taken               address             comment
+randy                    hecke          20.09.2016 21:05:12      10.0.0.1            do not power off - long time test over the weekend
 
 hecke> @inventory update randy ip:10.0.0.254 comment:
 
@@ -97,7 +113,8 @@ inventoryBOT> Box *randy* updated.
 
 hecke> @inventory show
 
-randy          hecke          10.0.0.254
+box name                 owner          time taken               address             comment
+randy                    hecke          20.09.2016 21:05:12      10.0.0.254          -
 ```
 
 ## del \<box-name\>
@@ -107,8 +124,9 @@ randy          hecke          10.0.0.254
 ```
 hecke> @inventory show
 
-randy          hecke          10.0.0.254          
-lorde          free
+box name                 owner          time taken               address             comment
+randy                    hecke          20.09.2016 21:05:12      10.0.0.254          -
+lorde                    free           -                        -                   -
 
 hecke> @inventory del randy
 
@@ -119,15 +137,16 @@ hecke> @inventory show
 lorde          free
 ```
 
-## take \<box-name\> [comment:\<comment\>}
+## take \<box-name\> [\<meta arg\>]
 
 *take* ownership of box given by name. 
 
 ```
 hecke> @inventory show
 
-lorde          free
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    free           -                        -                   - 
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 
 hecke> @inventory take lorde
 
@@ -135,13 +154,12 @@ inventoryBOT> Box *lorde* now in use by *hecke*.
 
 hecke> @inventory show
 
-lorde          hecke                              
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    hecke          20.09.2016 21:05:12      -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 ```
 
-If given, the comment is set.
-
-## occupy <box-name> [comment:\<comment\>}
+## occupy \<box-name\> [\<meta arg\>]
 
 *occupy* a box that is currently in use by another user. This is the unfriendly way. Asking the current owner is the
 preferred way...
@@ -149,8 +167,9 @@ preferred way...
 ```
 tester1> @inventory show
 
-lorde          hecke                              
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    hecke          20.09.2016 21:05:12      -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 
 tester1> @inventory take lorde
 
@@ -162,11 +181,10 @@ inventoryBOT> Box *lorde* *STOLEN* from *hecke* now in use by *tester1*.
 
 tester1> @inventory show
 
-lorde          tester1                            
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    tester1        20.09.2016 21:07:23      -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 ```
-
-If given, the comment is set.
 
 ## put \<box-name\>
 
@@ -176,17 +194,19 @@ If given, the comment is set.
 
 hecke> @inventory show
 
-lorde          tester1                            
-timmy          hecke          10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    hecke          20.09.2016 21:05:12      -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 
-hecke> @inventory put timmy
+hecke> @inventory put lorde
 
-inventoryBOT> *hecke* dropped ownership for box *timmy*.
+inventoryBOT> *hecke* dropped ownership for box *lorde*.
 
 hecke> @inventory show
 
-lorde          tester1                            
-timmy          free           10.0.0.17            don't power off - file-server!!!
+box name                 owner          time taken               address             comment
+lorde                    free           -                        -                   -
+timmy                    free           -                        10.0.0.17           don't power off - file-server!!!
 ```
 
 ## _restart
